@@ -40,16 +40,12 @@
 #include <I2C.h> // for IIC communication
 #include "MPL3115A2.h"
 
-uint8_t eC, msb, csb, lsb, cReg, sReg, dReg;
-int counter;
-long start;
-
 // Instantiate the class
 MPL3115A2::MPL3115A2() {
 }
 
 boolean MPL3115A2::begin() {
-  uint8_t whoCode;
+  uint8_t eC, whoCode;
 
 //  Assumes I2c.begin and Serial.begin have already been invoked
 //    and that the I2C speed has been set as desired.  
@@ -94,6 +90,9 @@ void MPL3115A2::setAltitude(int myAltitude) {
 float MPL3115A2::readAltitude() {
   
   uint32_t alt;
+  uint8_t sReg, dReg,  msb, csb, lsb;
+  int counter;
+  long start;
 
 //  Make sure there's nothing in the device buffer
   readStatus(STATUS, &sReg,(char *) "readAltitude() buffer-clear");
@@ -102,7 +101,7 @@ float MPL3115A2::readAltitude() {
   readStatus(STATUS, &sReg,(char *) "readAltitude() buffer-clear");       // double-check it
   if ( ( sReg & (PDR_F) ) != 0) Serial.println("Pressure data ready at start of altitude!");
   setModeAltimeter();     // Measure altitude above sea level in meters
-  toggleOneShot();        //Toggle the OST bit causing the sensor to immediately take another reading
+  toggleOneShot();        // Toggle the OST bit causing the sensor to immediately take another reading
 
   //Wait for PDR bit, indicates we have new pressure data
   counter = 0;
@@ -141,7 +140,10 @@ float MPL3115A2::readAltitudeFt()
 float MPL3115A2::readPressure()
 {
   uint32_t  press;
-  
+  uint8_t sReg, dReg,  msb, csb, lsb;
+  int counter;
+  long start;
+
 //  Make sure there's nothing in the device buffer
   readStatus(STATUS, &sReg, (char *) "readPressure() buffer-clear");
   if ( ( sReg & (PDR_F) ) != 0) 
@@ -178,6 +180,10 @@ float MPL3115A2::readPressure()
 
 //  returns the temperature in Celsius
 float MPL3115A2::readTemp() {
+  uint8_t sReg,dReg, msb, lsb;
+  int counter;
+  long start;
+
 
 //  Make sure there's nothing in the device buffer
   readStatus(STATUS, &sReg, (char *) "readTemp() buffer-clear");
@@ -225,6 +231,8 @@ float MPL3115A2::readTempF()
 //CTRL_REG1, ALT bit
 void MPL3115A2::setModeBarometer()
 {
+  uint8_t cReg;
+
   readStatus(CTRL_REG1, &cReg, (char *) "setModeBarometer()"); 
   cReg &= ~(ALT_F);                             // Clear ALT bit
   writeCtl(CTRL_REG1, cReg, (char *) "setModeBarometer()");
@@ -234,6 +242,8 @@ void MPL3115A2::setModeBarometer()
 //CTRL_REG1, ALT bit
 void MPL3115A2::setModeAltimeter()
 {
+  uint8_t cReg;
+
   readStatus(CTRL_REG1, &cReg, (char *) "setModeAltimeter()"); 
   cReg |= (ALT_F);                              // Set ALT bit
   writeCtl(CTRL_REG1, cReg, (char *) "setModeAltimeter()");
@@ -243,6 +253,8 @@ void MPL3115A2::setModeAltimeter()
 //This is needed so that we can modify the major control registers
 void MPL3115A2::setModeStandby()
 {
+  uint8_t cReg;
+
   readStatus(CTRL_REG1, &cReg, (char *) "setModeStandby()"); 
   cReg &= ~(ACTV_F);                          // Clear ACTIVE bit
   writeCtl(CTRL_REG1, cReg, (char *) "setModeStandby()");
@@ -252,6 +264,8 @@ void MPL3115A2::setModeStandby()
 //This is needed so that we can modify the major control registers
 void MPL3115A2::setModeActive()
 {
+  uint8_t cReg;
+
   readStatus(CTRL_REG1, &cReg, (char *) "setModeActive()"); 
   cReg |= (ACTV_F);                          // Set ACTIVE bit
   writeCtl(CTRL_REG1, cReg, (char *) "setModeActive()");
@@ -259,8 +273,10 @@ void MPL3115A2::setModeActive()
 
 //Set up FIFO mode to one of three modes. See page 26, table 31 of MPL3115A datasheet
 //From user jr4284
-void MPL3115A2::setFIFOMode(byte f_Mode)
+void MPL3115A2::setFIFOMode(uint8_t f_Mode)
 {
+  uint8_t cReg;
+
   readStatus(CTRL_REG1, &cReg, (char *) "setMoFIFOMode()"); 
   if (f_Mode > 3) f_Mode = 3;                   // FIFO value cannot exceed 3.
   f_Mode <<= 6;                                 // Shift FIFO byte left 6 to put it in bits 6, 7.
@@ -275,6 +291,8 @@ void MPL3115A2::setFIFOMode(byte f_Mode)
 //the time between data samples.
 void MPL3115A2::setOversampleRate(uint8_t sampleRate)
 {
+  uint8_t cReg;
+
   readStatus(CTRL_REG1, &cReg, (char *) "setOversampleRate()"); 
   if(sampleRate > 7) sampleRate = 7;            // OS cannot be larger than 0b.0111
   sampleRate <<= 3;                             // Align it for the CTRL_REG1 register bits 3,4,5
@@ -288,6 +306,7 @@ void MPL3115A2::setOversampleRate(uint8_t sampleRate)
 uint8_t MPL3115A2::getOversampleRate(void)
 {
   uint8_t sampleRate;
+  uint8_t eC, msb, csb, lsb, cReg, sReg, dReg;
 
   readStatus(CTRL_REG1, &cReg, (char *) "setOversampleRate()"); 
   sampleRate = (cReg >>= 3) & 0b111;
@@ -298,6 +317,8 @@ uint8_t MPL3115A2::getOversampleRate(void)
 //Needed to sample faster than 1Hz
 void MPL3115A2::toggleOneShot(void)
 {
+  uint8_t cReg;
+
   readStatus(CTRL_REG1, &cReg, (char *) "toggleOneShot()"); 
   cReg &= ~(OST_F);                             // Clear OST bit
   writeCtl(CTRL_REG1, cReg, (char *) "toggleOneShot()");    // Write it to reg & done
@@ -312,6 +333,7 @@ void MPL3115A2::reset(void) {
   uint8_t resetCode = RST_F;
   long maxWait;
   int counter;
+  uint8_t eC, cReg;
 
 //  Write reset bit to have device reboot
 //  No error checking here, since it will likely fail as device shuts off I2C during boot
@@ -344,6 +366,7 @@ void MPL3115A2::reset(void) {
 // Returns:
 //    eC      0 if no error; otherwise Atmel I2C error code
 uint8_t MPL3115A2::writeCtl(uint8_t reg, uint8_t value, char *caller) {
+  uint8_t eC;
 
   eC = I2c.write((uint8_t) MPL3115A2_ADDR, (uint8_t) reg, (uint8_t) value);
   if (eC != 0) {
@@ -361,6 +384,7 @@ uint8_t MPL3115A2::writeCtl(uint8_t reg, uint8_t value, char *caller) {
 // Returns:
 //    eC      0 if no error; otherwise Atmel I2C error code
 uint8_t MPL3115A2::readStatus(uint8_t reg, uint8_t *datain, char *caller) {
+  uint8_t eC;
 
   eC = I2c.read(MPL3115A2_ADDR, reg, 1, datain);
   if ( eC != 0 ) {
@@ -374,6 +398,8 @@ uint8_t MPL3115A2::readStatus(uint8_t reg, uint8_t *datain, char *caller) {
 //test against them. This is recommended in datasheet during setup.
 void MPL3115A2::enableEventFlags()
 {
+  uint8_t eC;
+
   eC = I2c.write(MPL3115A2_ADDR, PT_DATA_CFG, 0x07);     // Enable all three pressure and temp event flags 
   if (eC!=0) { Serial.print("In enableEventFlags(), eC = 0x"); Serial.println(eC, HEX); }
 }
