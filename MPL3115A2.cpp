@@ -14,6 +14,9 @@
   Thanks to Wayne Truchess for his excellent work on that system.
   See http://dsscircuits.com/articles/86-articles/66-arduino-i2c-master-library
 
+  Uses the F() macro to move strings to PROGMEN rather than SRAM; see
+    https://learn.adafruit.com/memories-of-an-arduino/optimizing-sram 
+
   Written by HDTodd, July, 2015
   Based on code by: A.Weiss, 7/17/2012, changes Nathan Seidle Sept 23rd, 2013 (SparkFun)
   License: This code is public domain but you buy me (Seidle) a beer if you use this 
@@ -53,11 +56,11 @@ boolean MPL3115A2::begin() {
 // Confirm that we can find the device
   eC=I2c.read(MPL3115A2_ADDR, WHO_AM_I, 1, &whoCode);
   if ( eC != 0 ) {      // fatal error condition
-       Serial.println("[MPL3115A2]No response from MPL3115A2 - check connections");
-       Serial.print("I2C error code = 0x"); Serial.println(eC, HEX);
-       Serial.println("Exiting ..."); 
-       delay(1000);     // wait for tty output to complete       
-       exit(1);
+    Serial.println(F("[MPL3115A2]No response from MPL3115A2 - check connections"));
+    Serial.print(F("I2C error code = 0x")); Serial.println(eC, HEX);
+    Serial.println(F("Exiting ...")); 
+    delay(1000);     // wait for tty output to complete       
+    exit(1);
   };
 
 // Confirm that we're talking to the right thing
@@ -82,7 +85,7 @@ boolean MPL3115A2::begin() {
 // Note that correction is only -128..+127 m, limited by 8-bit field size in device
 void MPL3115A2::setAltitude(int myAltitude) {
   if (myAltitude!=0) 
-    writeCtl(OFF_H,(int8_t)(myAltitude-(int)readAltitude()), (char *) "altitudeCorrection");
+    writeCtl(OFF_H,(int8_t)(myAltitude-(int)readAltitude()), (char *) F("altitudeCorrection"));
 };
 
 
@@ -95,11 +98,11 @@ float MPL3115A2::readAltitude() {
   long start;
 
 //  Make sure there's nothing in the device buffer
-  readStatus(STATUS, &sReg,(char *) "readAltitude() buffer-clear");
+  readStatus(STATUS, &sReg,(char *) F("readAltitude() buffer-clear"));
   if ( ( sReg & (PDR_F) ) != 0) 
-    readStatus(OUT_P_MSB, &dReg, (char *) "readAltitude() buffer-clear");  // read data to clear flag
-  readStatus(STATUS, &sReg,(char *) "readAltitude() buffer-clear");       // double-check it
-  if ( ( sReg & (PDR_F) ) != 0) Serial.println("Pressure data ready at start of altitude!");
+    readStatus(OUT_P_MSB, &dReg, (char *) F("readAltitude() buffer-clear"));  // read data to clear flag
+  readStatus(STATUS, &sReg,(char *) F("readAltitude() buffer-clear"));       // double-check it
+  if ( ( sReg & (PDR_F) ) != 0) Serial.println(F("Pressure data ready at start of altitude!"));
   setModeAltimeter();     // Measure altitude above sea level in meters
   toggleOneShot();        // Toggle the OST bit causing the sensor to immediately take another reading
 
@@ -110,17 +113,16 @@ float MPL3115A2::readAltitude() {
   while ( ( sReg & (PDR_F) ) == 0 )
   {
       if ( ( ++counter > 1000) | (millis() > start+TIMEOUT) ) {
-        Serial.println("Timeout waiting for altitude reading");
+        Serial.println(F("Timeout waiting for altitude reading"));
         return(-999); //Error out
       }
       delay(1);
       I2c.read(MPL3115A2_ADDR, STATUS, 1, &sReg);
   }
-  //  Serial.print("  Alt read time "); Serial.print(millis()-start); Serial.print("ms  ");
 
-  readStatus(OUT_P_MSB, &msb, (char *) "readAltitude() getting msb");
-  readStatus(OUT_P_CSB, &csb, (char *) "readAltitude() getting csb");
-  readStatus(OUT_P_LSB, &lsb, (char *) "readAltitude() getting lsb");
+  readStatus(OUT_P_MSB, &msb, (char *) F("readAltitude() getting msb"));
+  readStatus(OUT_P_CSB, &csb, (char *) F("readAltitude() getting csb"));
+readStatus(OUT_P_LSB, &lsb, (char *) F("readAltitude() getting lsb"));
 
   // The least significant byte of l_altitude is a left-justified 4-bit
   // fractional value in Pascals.
@@ -145,34 +147,32 @@ float MPL3115A2::readPressure()
   long start;
 
 //  Make sure there's nothing in the device buffer
-  readStatus(STATUS, &sReg, (char *) "readPressure() buffer-clear");
+  readStatus(STATUS, &sReg, (char *) F("readPressure() buffer-clear"));
   if ( ( sReg & (PDR_F) ) != 0) 
-    readStatus(OUT_P_MSB, &dReg, (char *) "readAltitude() buffer-clear");  // read MSB to clear flag
-  readStatus(STATUS, &sReg,(char *) "readPressure() buffer-clear");       // double-check it
-  if ( ( sReg & (PDR_F) ) != 0) Serial.println("Pressure data ready at start of altitude!");
+    readStatus(OUT_P_MSB, &dReg, (char *) F("readAltitude() buffer-clear"));  // read MSB to clear flag
+  readStatus(STATUS, &sReg,(char *) F("readPressure() buffer-clear"));       // double-check it
+  if ( ( sReg & (PDR_F) ) != 0) Serial.println(F("Pressure data ready at start of altitude!"));
   setModeBarometer();     // Measure pressure in Pascals from 20 to 110 kPa
   toggleOneShot();        //Toggle the OST bit causing the sensor to immediately take another reading
 
   //Wait for PDR bit, indicates we have new pressure data
   counter = 0;
   start = millis(); 
-  readStatus(STATUS, &sReg, (char *) "pressure() data sampling");
+  readStatus(STATUS, &sReg, (char *) F("pressure() data sampling"));
   I2c.read(MPL3115A2_ADDR, STATUS, 1, &sReg);
   while ( ( sReg & (PDR_F)) == 0 )
   {
       if ( ( ++counter > 1000) | (millis() > start+TIMEOUT) ) {
-        Serial.println("Timeout waiting for pressure");
+        Serial.println(F("Timeout waiting for pressure"));
         return(-999); //Error out
       }
       delay(1);
-      readStatus(STATUS, &sReg, (char *) "pressure() data sampling");
+      readStatus(STATUS, &sReg, (char *) F("pressure() data sampling"));
   }
 
-  //  Serial.print("Pressure read time "); Serial.print(millis()-start); Serial.print("ms  ");
-
-  readStatus(OUT_P_MSB, &msb, (char *) "readPressure() getting msb");
-  readStatus(OUT_P_CSB, &csb, (char *) "readPressure() getting csb");
-  readStatus(OUT_P_LSB, &lsb, (char *) "readPressure() getting lsb");
+  readStatus(OUT_P_MSB, &msb, (char *) F("readPressure() getting msb"));
+  readStatus(OUT_P_CSB, &csb, (char *) F("readPressure() getting csb"));
+  readStatus(OUT_P_LSB, &lsb, (char *) F("readPressure() getting lsb"));
 
   press = (uint32_t)msb<<16 | (uint32_t)csb<<8 | (uint32_t)(lsb & 0xF0);
   return( (float)press/64.0 );
@@ -184,34 +184,32 @@ float MPL3115A2::readTemp() {
   int counter;
   long start;
 
-
 //  Make sure there's nothing in the device buffer
-  readStatus(STATUS, &sReg, (char *) "readTemp() buffer-clear");
+  readStatus(STATUS, &sReg, (char *) F("readTemp() buffer-clear"));
   if ( ( sReg & (TDR_F) ) != 0) 
-    readStatus(OUT_T_MSB, &dReg, (char *) "readTemp() buffer-clear");  // read MSB to clear flag
-  readStatus(STATUS, &sReg, (char *) "readTemp() 2nd buffer-clear");       // double-check it
-  if ( ( sReg & (TDR_F) ) != 0) Serial.println("Temp data ready at start of readTemp()!");
+    readStatus(OUT_T_MSB, &dReg, (char *) F("readTemp() buffer-clear"));  // read MSB to clear flag
+  readStatus(STATUS, &sReg, (char *) F("readTemp() 2nd buffer-clear"));       // double-check it
+  if ( ( sReg & (TDR_F) ) != 0) Serial.println(F("Temp data ready at start of readTemp()!"));
 
   toggleOneShot(); //Toggle the OST bit causing the sensor to immediately take another reading
 
   //Wait for TDR bit, indicates we have new temp data
   counter = 0;
   start = millis(); 
-  readStatus(STATUS, &sReg, (char *) "readTemp() data sampling");
+  readStatus(STATUS, &sReg, (char *) F("readTemp() data sampling"));
   while( ( sReg & (PDR_F)) == 0 ) {
       if ( ( ++counter > 1000) | (millis() > start+TIMEOUT) ) {
-        Serial.println("Timeout waiting for temperature");
+        Serial.println(F("Timeout waiting for temperature"));
         return(-999); //Error out
       }
       delay(1);
-      readStatus(STATUS, &sReg, (char *) "readTemp() data sampling"); 
+      readStatus(STATUS, &sReg, (char *) F("readTemp() data sampling")); 
       }
-  //  Serial.print("  Temp read time "); Serial.print(millis()-start); Serial.print("ms  ");
   
   // Read temperature registers
 
-  readStatus(OUT_T_MSB, &msb, (char *) "readPressure() getting msb");
-  readStatus(OUT_T_LSB, &lsb, (char *) "readPressure() getting lsb");
+  readStatus(OUT_T_MSB, &msb, (char *) F("readPressure() getting msb"));
+  readStatus(OUT_T_LSB, &lsb, (char *) F("readPressure() getting lsb"));
 
 /*  Temp is 8-bit integer +  4-bit fraction, 2s-comp format, left-justified 
  *  in two successive bytes.  Create 16-bit unsigned, convert to signed, 
@@ -233,9 +231,9 @@ void MPL3115A2::setModeBarometer()
 {
   uint8_t cReg;
 
-  readStatus(CTRL_REG1, &cReg, (char *) "setModeBarometer()"); 
+  readStatus(CTRL_REG1, &cReg, (char *) F("setModeBarometer()")); 
   cReg &= ~(ALT_F);                             // Clear ALT bit
-  writeCtl(CTRL_REG1, cReg, (char *) "setModeBarometer()");
+  writeCtl(CTRL_REG1, cReg, (char *) F("setModeBarometer()"));
 }
 
 //Sets the mode to Altimeter
@@ -244,9 +242,9 @@ void MPL3115A2::setModeAltimeter()
 {
   uint8_t cReg;
 
-  readStatus(CTRL_REG1, &cReg, (char *) "setModeAltimeter()"); 
+  readStatus(CTRL_REG1, &cReg, (char *) F("setModeAltimeter()")); 
   cReg |= (ALT_F);                              // Set ALT bit
-  writeCtl(CTRL_REG1, cReg, (char *) "setModeAltimeter()");
+  writeCtl(CTRL_REG1, cReg, (char *) F("setModeAltimeter()"));
 }
 
 //Puts the sensor in standby mode
@@ -255,9 +253,9 @@ void MPL3115A2::setModeStandby()
 {
   uint8_t cReg;
 
-  readStatus(CTRL_REG1, &cReg, (char *) "setModeStandby()"); 
+  readStatus(CTRL_REG1, &cReg, (char *) F("setModeStandby()")); 
   cReg &= ~(ACTV_F);                          // Clear ACTIVE bit
-  writeCtl(CTRL_REG1, cReg, (char *) "setModeStandby()");
+  writeCtl(CTRL_REG1, cReg, (char *) F("setModeStandby()"));
 }
 
 //Puts the sensor in active mode
@@ -266,9 +264,9 @@ void MPL3115A2::setModeActive()
 {
   uint8_t cReg;
 
-  readStatus(CTRL_REG1, &cReg, (char *) "setModeActive()"); 
+  readStatus(CTRL_REG1, &cReg, (char *) F("setModeActive()")); 
   cReg |= (ACTV_F);                          // Set ACTIVE bit
-  writeCtl(CTRL_REG1, cReg, (char *) "setModeActive()");
+  writeCtl(CTRL_REG1, cReg, (char *) F("setModeActive()"));
 }
 
 //Set up FIFO mode to one of three modes. See page 26, table 31 of MPL3115A datasheet
@@ -277,12 +275,12 @@ void MPL3115A2::setFIFOMode(uint8_t f_Mode)
 {
   uint8_t cReg;
 
-  readStatus(CTRL_REG1, &cReg, (char *) "setMoFIFOMode()"); 
+  readStatus(CTRL_REG1, &cReg, (char *) F("setMoFIFOMode()")); 
   if (f_Mode > 3) f_Mode = 3;                   // FIFO value cannot exceed 3.
   f_Mode <<= 6;                                 // Shift FIFO byte left 6 to put it in bits 6, 7.
   cReg &= ~(3<<6);                              // clear bits 6, 7
   cReg |= f_Mode;                               // Mask in new FIFO bits
-  writeCtl(CTRL_REG1, cReg, (char *) "setMoFIFOMode()");
+  writeCtl(CTRL_REG1, cReg, (char *) F("setMoFIFOMode()"));
 }
 
 //Call with a rate from 0 to 7. See page 33 for table of ratios.
@@ -293,12 +291,12 @@ void MPL3115A2::setOversampleRate(uint8_t sampleRate)
 {
   uint8_t cReg;
 
-  readStatus(CTRL_REG1, &cReg, (char *) "setOversampleRate()"); 
+  readStatus(CTRL_REG1, &cReg, (char *) F("setOversampleRate()")); 
   if(sampleRate > 7) sampleRate = 7;            // OS cannot be larger than 0b.0111
   sampleRate <<= 3;                             // Align it for the CTRL_REG1 register bits 3,4,5
   cReg &= ~(7<<3);                              // Clear out old OS bits in bits 3,4,5
   cReg |= sampleRate;                           // Mask in new OS bits
-  writeCtl(CTRL_REG1, cReg, (char *) "setOversampleRate()");    // Write 8t to reg & done
+  writeCtl(CTRL_REG1, cReg, (char *) F("setOversampleRate()"));    // Write 8t to reg & done
 }
 
 // Returns the current oversample rate setting, a value 0-7.
@@ -308,7 +306,7 @@ uint8_t MPL3115A2::getOversampleRate(void)
   uint8_t sampleRate;
   uint8_t eC, msb, csb, lsb, cReg, sReg, dReg;
 
-  readStatus(CTRL_REG1, &cReg, (char *) "setOversampleRate()"); 
+  readStatus(CTRL_REG1, &cReg, (char *) F("getOversampleRate()")); 
   sampleRate = (cReg >>= 3) & 0b111;
   return (sampleRate );  // right justify, isolate, & return that 3 bit field
 }
@@ -319,13 +317,13 @@ void MPL3115A2::toggleOneShot(void)
 {
   uint8_t cReg;
 
-  readStatus(CTRL_REG1, &cReg, (char *) "toggleOneShot()"); 
+  readStatus(CTRL_REG1, &cReg, (char *) F("toggleOneShot()")); 
   cReg &= ~(OST_F);                             // Clear OST bit
-  writeCtl(CTRL_REG1, cReg, (char *) "toggleOneShot()");    // Write it to reg & done
+  writeCtl(CTRL_REG1, cReg, (char *) F("toggleOneShot()"));    // Write it to reg & done
 
-  readStatus(CTRL_REG1, &cReg, (char *) "toggleOneShot()"); //Read current settings to be safe
+  readStatus(CTRL_REG1, &cReg, (char *) F("toggleOneShot()")); //Read current settings to be safe
   cReg |= (OST_F);                              // Set OST bit
-  writeCtl(CTRL_REG1, cReg, (char *) "toggleOneShot()");    // Write it to reg & done
+  writeCtl(CTRL_REG1, cReg, (char *) F("toggleOneShot()"));    // Write it to reg & done
 }
 
 // Reset MPL3115A2 to known default states and registers
@@ -348,9 +346,9 @@ void MPL3115A2::reset(void) {
     {
       eC = I2c.read(MPL3115A2_ADDR,CTRL_REG1,1,&cReg);
       if ( ( ++counter > 1000) | (millis() > maxWait) ) {
-        Serial.println("Timeout waiting for reset");
-        Serial.print("I2C read error code = 0x"); Serial.println(eC, HEX);
-        Serial.print("Ctrl Reg = 0x"); Serial.println(cReg, HEX);
+        Serial.println(F("Timeout waiting for reset"));
+        Serial.print(F("I2C read error code = 0x")); Serial.println(eC, HEX);
+        Serial.print(F("Ctrl Reg = 0x")); Serial.println(cReg, HEX);
         delay(1000);
         exit(3);       //Error out
       }
@@ -370,8 +368,8 @@ uint8_t MPL3115A2::writeCtl(uint8_t reg, uint8_t value, char *caller) {
 
   eC = I2c.write((uint8_t) MPL3115A2_ADDR, (uint8_t) reg, (uint8_t) value);
   if (eC != 0) {
-    Serial.print("I2C communication write error in "); Serial.print(caller); 
-    Serial.print("; Atmel I2C error code = 0x"); Serial.println(eC, HEX);
+    Serial.print(F("I2C communication write error in ")); Serial.print(caller); 
+    Serial.print(F("; Atmel I2C error code = 0x")); Serial.println(eC, HEX);
   }
   return(eC);
 }
@@ -388,8 +386,8 @@ uint8_t MPL3115A2::readStatus(uint8_t reg, uint8_t *datain, char *caller) {
 
   eC = I2c.read(MPL3115A2_ADDR, reg, 1, datain);
   if ( eC != 0 ) {
-    Serial.print("I2C communication read error in "); Serial.print(caller); 
-    Serial.print("; Atmel I2C error code = 0x"); Serial.println(eC, HEX);    
+    Serial.print(F("I2C communication read error in ")); Serial.print(caller); 
+    Serial.print(F("; Atmel I2C error code = 0x")); Serial.println(eC, HEX);    
   }
   return(eC);
 }
@@ -401,6 +399,6 @@ void MPL3115A2::enableEventFlags()
   uint8_t eC;
 
   eC = I2c.write(MPL3115A2_ADDR, PT_DATA_CFG, 0x07);     // Enable all three pressure and temp event flags 
-  if (eC!=0) { Serial.print("In enableEventFlags(), eC = 0x"); Serial.println(eC, HEX); }
+  if (eC!=0) { Serial.print(F("In enableEventFlags(), eC = 0x")); Serial.println(eC, HEX); }
 }
 
