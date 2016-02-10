@@ -27,11 +27,11 @@ Hardware Connections to MPL3115A2 (Breakout board to Arduino):
 Usage:
 * Serial terminal at 9600bps
 * Times various sensor measurements
-*-Examines status flags used to poll device for data ready
+* Examines status flags used to poll device for data ready
  
 During testing, GPS with 9 satellites reported 5393ft, sensor reported 5360ft 
-(delta of 33ft). Very close! (Seidle)
+(delta of 33ft). Very close! (Seidle)  
 During testing, GPS with 9 satellites reported 1520m; sensor reported 1433m; 
-surprisingly far off (Todd)  [So I chose to tell it what the altitude is and 
+surprisingly far off (Todd).  [So I chose to tell it what the altitude is and 
 have it apply the correction -- Todd]
 
