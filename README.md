@@ -5,7 +5,7 @@ the Freescale MPL3115A2 altitude/barometric pressure/temperature sensor.
 
 This library uses Wayne Truchsess's I2C library for communication with the MPL3115A2 to avoid
 misaligned data caused by repeated-starts that occurred with the older Wire library.
-Sampling was found to be unreliable over time when using the Wire library, `<`wire.h`>`.
+Sampling was found to be unreliable over time when using the Wire library, `<wire.h>`.
 Converted to use I2C library since it handles the repeated START I2C commands that the 
 Freescale, Inc., devices use.
 
