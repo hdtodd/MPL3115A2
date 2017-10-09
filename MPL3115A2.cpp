@@ -56,11 +56,9 @@ boolean MPL3115A2::begin() {
 // Confirm that we can find the device
   eC=I2c.read(MPL3115A2_ADDR, WHO_AM_I, 1, &whoCode);
   if ( eC != 0 ) {      // fatal error condition
-    Serial.println(F("[MPL3115A2]No response from MPL3115A2 - check connections"));
+    Serial.print(F("[%MPL3115A2]No response from MPL3115A2 - check connections.  "));
     Serial.print(F("I2C error code = 0x")); Serial.println(eC, HEX);
-    Serial.println(F("Exiting ...")); 
-    delay(1000);     // wait for tty output to complete       
-    exit(1);
+    return false;
   };
 
 // Confirm that we're talking to the right thing
@@ -80,9 +78,13 @@ boolean MPL3115A2::begin() {
   return true;
 }
 
-// Sets altitude correction.  Not generally used, but available if needed
+// Sets altitude correction to compensate for systemic device error in altitude.
 // myAltitude is your GPS-supplied altitude, in meters
 // Note that correction is only -128..+127 m, limited by 8-bit field size in device
+// This code uses the MPL's ability to apply a "trim" factor to compensate for
+//   inherent systemic errors in the device.  It uses the difference between
+//   user-supplied, GPS-determined altitude and the MPL's reading for altitude,
+//   and it sets the MPL's internal offset to that difference.
 void MPL3115A2::setAltitude(int myAltitude) {
   if (myAltitude!=0) 
     writeCtl(OFF_H,(int8_t)(myAltitude-(int)readAltitude()), (char *) F("altitudeCorrection"));
