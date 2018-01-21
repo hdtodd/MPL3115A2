@@ -56,7 +56,7 @@ boolean MPL3115A2::begin() {
 // Confirm that we can find the device
   eC=I2c.read(MPL3115A2_ADDR, WHO_AM_I, 1, &whoCode);
   if ( eC != 0 ) {      // fatal error condition
-    Serial.print(F("[%MPL3115A2]No response from MPL3115A2 - check connections.  "));
+    Serial.print(F("[%MPL3115A2] No response from MPL3115A2 - check connections.  "));
     Serial.print(F("I2C error code = 0x")); Serial.println(eC, HEX);
     return false;
   };
