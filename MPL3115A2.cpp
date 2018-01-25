@@ -97,7 +97,7 @@ float MPL3115A2::readAltitude() {
   uint32_t alt;
   uint8_t sReg, dReg,  msb, csb, lsb;
   int counter;
-  long start;
+  unsigned long start;
 
 //  Make sure there's nothing in the device buffer
   readStatus(STATUS, &sReg,(char *) F("readAltitude() buffer-clear"));
@@ -305,8 +305,8 @@ void MPL3115A2::setOversampleRate(uint8_t sampleRate)
 // See page 33 for table of rate settings.
 uint8_t MPL3115A2::getOversampleRate(void)
 {
-  uint8_t sampleRate;
-  uint8_t eC, msb, csb, lsb, cReg, sReg, dReg;
+  uint8_t sampleRate, cReg;
+  //  uint8_t eC, msb, csb, lsb, sReg, dReg;
 
   readStatus(CTRL_REG1, &cReg, (char *) F("getOversampleRate()")); 
   sampleRate = (cReg >>= 3) & 0b111;
@@ -330,8 +330,7 @@ void MPL3115A2::toggleOneShot(void)
 
 // Reset MPL3115A2 to known default states and registers
 void MPL3115A2::reset(void) {
-  uint8_t resetCode = RST_F;
-  long maxWait;
+  unsigned long maxWait;
   int counter;
   uint8_t eC, cReg;
 

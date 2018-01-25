@@ -118,7 +118,7 @@ enum signalFlags {
 #define I_AM_MPL3115A2 0xC4     // returned from Reg 0x0C per datasheet spec
 
 #define REPS 3       		// # of iterations for averaging timings
-#define TIMEOUT 512             // max wait time in ms for device response
+#define TIMEOUT (unsigned long)512 // max wait time in ms for device response
 #define FT_PER_METER 3.28084    // conversion
 
 class MPL3115A2 {
